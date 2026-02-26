@@ -131,7 +131,7 @@ export function MetricsPanel({ metrics }: MetricsPanelProps) {
         <div style={styles.histogramTitle}>Latency Distribution</div>
         <div style={styles.bars}>
           {metrics.latencyHistogram.map((count, idx) => (
-            <div key={idx} style={styles.barContainer}>
+            <div key={BUCKET_LABELS[idx]} style={styles.barContainer}>
               <div style={styles.barValue}>{count}</div>
               <div style={styles.bar((count / maxBucket) * 100)} />
               <div style={styles.barLabel}>{BUCKET_LABELS[idx]}</div>

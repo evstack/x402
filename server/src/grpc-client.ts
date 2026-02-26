@@ -1,13 +1,10 @@
+import path from "node:path";
 import * as grpc from "@grpc/grpc-js";
 import * as protoLoader from "@grpc/proto-loader";
-import { type Address, type Hash } from "viem";
-import path from "path";
+import type { Address, Hash } from "viem";
 
 // Path to the proto files (relative to the evolve repo root)
-const PROTO_PATH = path.resolve(
-  import.meta.dir,
-  "../../../../crates/rpc/grpc/proto"
-);
+const PROTO_PATH = path.resolve(import.meta.dir, "../../../../crates/rpc/grpc/proto");
 
 // gRPC client types (matching the proto definitions)
 interface H256 {
@@ -63,27 +60,27 @@ interface GetBlockNumberResponse {
 interface ExecutionServiceClient {
   getBalance(
     request: { address: AddressProto; block?: unknown },
-    callback: (err: grpc.ServiceError | null, response: GetBalanceResponse) => void
+    callback: (err: grpc.ServiceError | null, response: GetBalanceResponse) => void,
   ): void;
 
   getTransactionReceipt(
     request: { hash: H256 },
-    callback: (err: grpc.ServiceError | null, response: GetTransactionReceiptResponse) => void
+    callback: (err: grpc.ServiceError | null, response: GetTransactionReceiptResponse) => void,
   ): void;
 
   sendRawTransaction(
     request: { data: Buffer },
-    callback: (err: grpc.ServiceError | null, response: SendRawTransactionResponse) => void
+    callback: (err: grpc.ServiceError | null, response: SendRawTransactionResponse) => void,
   ): void;
 
   getTransactionCount(
     request: { address: AddressProto; block?: unknown },
-    callback: (err: grpc.ServiceError | null, response: GetTransactionCountResponse) => void
+    callback: (err: grpc.ServiceError | null, response: GetTransactionCountResponse) => void,
   ): void;
 
   getBlockNumber(
     request: Record<string, never>,
-    callback: (err: grpc.ServiceError | null, response: GetBlockNumberResponse) => void
+    callback: (err: grpc.ServiceError | null, response: GetBlockNumberResponse) => void,
   ): void;
 }
 
@@ -122,7 +119,7 @@ export interface EvolveGrpcClient {
 }
 
 export async function createEvolveGrpcClient(
-  endpoint: string = "localhost:9545"
+  endpoint: string = "localhost:9545",
 ): Promise<EvolveGrpcClient> {
   // Load proto files
   const packageDefinition = await protoLoader.load(
@@ -137,28 +134,27 @@ export async function createEvolveGrpcClient(
       defaults: true,
       oneofs: true,
       includeDirs: [PROTO_PATH],
-    }
+    },
   );
 
   const protoDescriptor = grpc.loadPackageDefinition(packageDefinition);
-  const evolve = protoDescriptor.evolve as { v1: { ExecutionService: grpc.ServiceClientConstructor } };
+  const evolve = protoDescriptor.evolve as {
+    v1: { ExecutionService: grpc.ServiceClientConstructor };
+  };
 
   // Create client
   const client = new evolve.v1.ExecutionService(
     endpoint,
-    grpc.credentials.createInsecure()
+    grpc.credentials.createInsecure(),
   ) as unknown as ExecutionServiceClient;
 
   return {
     async getBalance(address: Address): Promise<bigint> {
       return new Promise((resolve, reject) => {
-        client.getBalance(
-          { address: addressToProto(address) },
-          (err, response) => {
-            if (err) reject(err);
-            else resolve(protoToU256(response.balance));
-          }
-        );
+        client.getBalance({ address: addressToProto(address) }, (err, response) => {
+          if (err) reject(err);
+          else resolve(protoToU256(response.balance));
+        });
       });
     },
 
@@ -188,20 +184,17 @@ export async function createEvolveGrpcClient(
           (err, response) => {
             if (err) reject(err);
             else resolve(protoToHash(response.hash));
-          }
+          },
         );
       });
     },
 
     async getTransactionCount(address: Address): Promise<number> {
       return new Promise((resolve, reject) => {
-        client.getTransactionCount(
-          { address: addressToProto(address) },
-          (err, response) => {
-            if (err) reject(err);
-            else resolve(response.count);
-          }
-        );
+        client.getTransactionCount({ address: addressToProto(address) }, (err, response) => {
+          if (err) reject(err);
+          else resolve(response.count);
+        });
       });
     },
 

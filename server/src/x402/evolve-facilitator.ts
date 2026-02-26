@@ -1,12 +1,12 @@
+import type { FacilitatorClient } from "@x402/core/server";
 import type {
+  Network,
   PaymentPayload,
   PaymentRequirements,
-  VerifyResponse,
   SettleResponse,
   SupportedResponse,
-  Network,
+  VerifyResponse,
 } from "@x402/core/types";
-import type { FacilitatorClient } from "@x402/core/server";
 import { type EvolveClient, getTransactionReceipt } from "../evolve.js";
 
 const TX_HASH_TTL_MS = 3_600_000; // 1 hour
@@ -45,10 +45,7 @@ export class EvolveFacilitatorClient implements FacilitatorClient {
     }
 
     try {
-      const receipt = await getTransactionReceipt(
-        this.client,
-        txHash as `0x${string}`,
-      );
+      const receipt = await getTransactionReceipt(this.client, txHash as `0x${string}`);
 
       if (!receipt) {
         return { isValid: false, invalidReason: "Transaction not found" };

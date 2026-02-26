@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { PaymentEvent } from "./useEventStream";
 
 export interface AgentStatus {
@@ -46,9 +46,7 @@ export function useMetrics(events: PaymentEvent[]): Metrics {
     const interval = setInterval(() => {
       const now = Date.now();
       const windowMs = 1000;
-      recentRequestsRef.current = recentRequestsRef.current.filter(
-        (t) => now - t < windowMs
-      );
+      recentRequestsRef.current = recentRequestsRef.current.filter((t) => now - t < windowMs);
       setTps(recentRequestsRef.current.length);
     }, 100);
 
@@ -143,8 +141,7 @@ export function useMetrics(events: PaymentEvent[]): Metrics {
       else buckets[4]++;
     }
 
-    const successRate =
-      totalRequests > 0 ? (successfulRequests / totalRequests) * 100 : 0;
+    const successRate = totalRequests > 0 ? (successfulRequests / totalRequests) * 100 : 0;
 
     return {
       totalRequests,

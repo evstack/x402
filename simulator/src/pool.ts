@@ -1,21 +1,15 @@
-import {
-  type Hash,
-  createWalletClient,
-  createPublicClient,
-  http,
-  defineChain,
-} from "viem";
+import { createPublicClient, createWalletClient, defineChain, type Hash, http } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { Agent, createAgentConfig } from "./agent.js";
-import { MetricsCollector } from "./metrics.js";
-import type { PoolConfig, PoolMetrics, RequestResult } from "./types.js";
 import {
-  getAgentPrivateKeys,
-  TOKEN_ACCOUNT_CANDIDATES,
   accountIdToAddress,
   addressToAccountId,
   buildTransferData,
+  getAgentPrivateKeys,
+  TOKEN_ACCOUNT_CANDIDATES,
 } from "./evolve-utils.js";
+import { MetricsCollector } from "./metrics.js";
+import type { PoolConfig, PoolMetrics, RequestResult } from "./types.js";
 
 export class AgentPool {
   private config: PoolConfig;
@@ -121,11 +115,17 @@ export class AgentPool {
       tokenAccountId,
       chainId,
     );
-    const firstAgent = new Agent(fundedFirstConfig, this.config.serverUrl, this.config.evolveRpcUrl);
+    const firstAgent = new Agent(
+      fundedFirstConfig,
+      this.config.serverUrl,
+      this.config.evolveRpcUrl,
+    );
     firstAgent.setResultHandler((result) => this.handleAgentResult(result));
     this.agents.push(firstAgent);
     this.metrics.registerAgent(fundedFirstConfig.id, fundedFirstConfig.address);
-    console.log(`Funded agent ${fundedFirstConfig.id} (${fundedFirstConfig.address.slice(0, 10)}...) with ${this.config.fundingAmount} tokens`);
+    console.log(
+      `Funded agent ${fundedFirstConfig.id} (${fundedFirstConfig.address.slice(0, 10)}...) with ${this.config.fundingAmount} tokens`,
+    );
 
     // Fund remaining agents in parallel: batch-send all txs, then wait for the last receipt
     const fundingTxHashes: Hash[] = [];
@@ -147,7 +147,7 @@ export class AgentPool {
       const data = buildTransferData(agentAccountId, this.config.fundingAmount);
 
       console.log(
-        `Funding agent ${agentConfig.id} (${agentConfig.address.slice(0, 10)}...) with ${this.config.fundingAmount} tokens`
+        `Funding agent ${agentConfig.id} (${agentConfig.address.slice(0, 10)}...) with ${this.config.fundingAmount} tokens`,
       );
 
       const txHash = await faucetWallet.sendTransaction({
@@ -169,11 +169,7 @@ export class AgentPool {
 
     // Create all agents after funding is confirmed
     for (const { config: agentConfig } of pendingAgents) {
-      const agent = new Agent(
-        agentConfig,
-        this.config.serverUrl,
-        this.config.evolveRpcUrl
-      );
+      const agent = new Agent(agentConfig, this.config.serverUrl, this.config.evolveRpcUrl);
 
       agent.setResultHandler((result) => this.handleAgentResult(result));
 
@@ -189,14 +185,10 @@ export class AgentPool {
 
     const status = result.success ? "OK" : "FAIL";
     const latency = `${result.latencyMs}ms`;
-    const payment = result.paymentLatencyMs
-      ? ` (payment: ${result.paymentLatencyMs}ms)`
-      : "";
+    const payment = result.paymentLatencyMs ? ` (payment: ${result.paymentLatencyMs}ms)` : "";
     const error = result.error ? ` - ${result.error}` : "";
 
-    console.log(
-      `[${result.agentId}] ${status} ${result.endpoint} ${latency}${payment}${error}`
-    );
+    console.log(`[${result.agentId}] ${status} ${result.endpoint} ${latency}${payment}${error}`);
   }
 
   async start(): Promise<void> {
@@ -215,9 +207,9 @@ export class AgentPool {
           setTimeout(async () => {
             await agent.start();
             resolve();
-          }, delay)
+          }, delay),
         );
-      })
+      }),
     );
 
     this.metricsInterval = setInterval(() => {
@@ -260,7 +252,7 @@ export class AgentPool {
         const balance = await agent.getBalance();
         balances.set(agent.id, balance);
         this.metrics.updateAgentBalance(agent.id, balance);
-      })
+      }),
     );
     return balances;
   }

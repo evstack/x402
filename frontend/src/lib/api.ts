@@ -11,7 +11,7 @@ export class ApiError extends Error {
   constructor(
     public status: number,
     public data: unknown,
-    public headers: Headers
+    public headers: Headers,
   ) {
     super(`API Error: ${status}`);
   }
@@ -56,7 +56,7 @@ async function api<T>(path: string, options: ApiOptions = {}): Promise<T> {
   };
 
   if (options.token) {
-    headers["Authorization"] = `Bearer ${options.token}`;
+    headers.Authorization = `Bearer ${options.token}`;
   }
 
   if (options.paymentSignature) {
@@ -80,28 +80,25 @@ async function api<T>(path: string, options: ApiOptions = {}): Promise<T> {
 // Auth endpoints - using 'any' for WebAuthn JSON types as they're passed through
 export async function startRegistration(username: string) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return api<{ options: any; userId: string }>(
-    "/auth/register",
-    { method: "POST", body: { username } }
-  );
+  return api<{ options: any; userId: string }>("/auth/register", {
+    method: "POST",
+    body: { username },
+  });
 }
 
-export async function verifyRegistration(
-  userId: string,
-  credential: unknown
-) {
-  return api<{ success: boolean; address: string; sessionToken: string }>(
-    "/auth/register/verify",
-    { method: "POST", body: { userId, credential } }
-  );
+export async function verifyRegistration(userId: string, credential: unknown) {
+  return api<{ success: boolean; address: string; sessionToken: string }>("/auth/register/verify", {
+    method: "POST",
+    body: { userId, credential },
+  });
 }
 
 export async function startLogin(username?: string) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return api<{ options: any; authId: string }>(
-    "/auth/login",
-    { method: "POST", body: { username } }
-  );
+  return api<{ options: any; authId: string }>("/auth/login", {
+    method: "POST",
+    body: { username },
+  });
 }
 
 export async function verifyLogin(authId: string, credential: unknown) {
@@ -139,11 +136,7 @@ export async function requestFaucet(token: string) {
   });
 }
 
-export async function transfer(
-  token: string,
-  to: string,
-  amount: string
-) {
+export async function transfer(token: string, to: string, amount: string) {
   return api<{ txHash: string }>("/wallet/transfer", {
     method: "POST",
     token,
@@ -155,12 +148,13 @@ export async function transfer(
 export async function transform(
   operation: "echo" | "reverse" | "uppercase" | "hash",
   input: string,
-  paymentSignature?: string
+  paymentSignature?: string,
 ) {
-  return api<{ output: string; operation: string; cost: string }>(
-    `/api/transform/${operation}`,
-    { method: "POST", body: { input }, paymentSignature }
-  );
+  return api<{ output: string; operation: string; cost: string }>(`/api/transform/${operation}`, {
+    method: "POST",
+    body: { input },
+    paymentSignature,
+  });
 }
 
 export async function getPricing() {
@@ -219,10 +213,7 @@ async function callRpc<T>(method: string, params: unknown[]): Promise<T | null> 
 }
 
 export async function getLatestBlockTxCountViaRpc(): Promise<number | null> {
-  const result = await callRpc<string | null>(
-    "eth_getBlockTransactionCountByNumber",
-    ["latest"]
-  );
+  const result = await callRpc<string | null>("eth_getBlockTransactionCountByNumber", ["latest"]);
   if (typeof result !== "string") return null;
   return Number.parseInt(result, 16);
 }
@@ -241,10 +232,7 @@ export async function getChainStats() {
 }
 
 // Payment helper — builds v2 PaymentPayload with resource + accepted
-export function createPaymentSignature(
-  txHash: string,
-  paymentRequired?: PaymentRequired,
-): string {
+export function createPaymentSignature(txHash: string, paymentRequired?: PaymentRequired): string {
   const payload = {
     x402Version: 2,
     resource: paymentRequired?.resource ?? {

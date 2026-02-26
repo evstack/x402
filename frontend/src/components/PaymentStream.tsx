@@ -1,4 +1,4 @@
-import { useRef, useEffect } from "react";
+import { useEffect, useRef } from "react";
 import type { PaymentEvent } from "../hooks/useEventStream";
 
 interface PaymentStreamProps {
@@ -98,7 +98,7 @@ export function PaymentStream({ events }: PaymentStreamProps) {
     if (containerRef.current && shouldScrollRef.current) {
       containerRef.current.scrollTop = containerRef.current.scrollHeight;
     }
-  }, [events]);
+  }, []);
 
   // Detect if user has scrolled up
   const handleScroll = () => {

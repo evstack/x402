@@ -1,16 +1,15 @@
 import { Hono } from "hono";
 import {
   type Address,
-  type Hash,
-  type Hex,
-  isAddress,
-  formatEther,
-  parseEther,
   createWalletClient,
+  formatEther,
+  type Hex,
   http,
+  isAddress,
+  parseEther,
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { type EvolveClient, getBalance, getNonce, evolveTestnet } from "./evolve.js";
+import { type EvolveClient, evolveTestnet, getBalance, getNonce } from "./evolve.js";
 import { authMiddleware, getUserPrivateKey, type UserRecord } from "./passkey.js";
 
 // Faucet configuration
@@ -87,10 +86,13 @@ export function createWalletRoutes(client: EvolveClient) {
     const user = c.get("user");
 
     if (!FAUCET_PRIVATE_KEY) {
-      return c.json({
-        error: "Faucet not configured",
-        message: "Set FAUCET_PRIVATE_KEY environment variable",
-      }, 501);
+      return c.json(
+        {
+          error: "Faucet not configured",
+          message: "Set FAUCET_PRIVATE_KEY environment variable",
+        },
+        501,
+      );
     }
 
     try {
@@ -162,11 +164,14 @@ export function createWalletRoutes(client: EvolveClient) {
       // Check balance
       const balance = await getBalance(client, user.address);
       if (balance < amountWei) {
-        return c.json({
-          error: "Insufficient balance",
-          balance: balance.toString(),
-          required: amountWei.toString(),
-        }, 400);
+        return c.json(
+          {
+            error: "Insufficient balance",
+            balance: balance.toString(),
+            required: amountWei.toString(),
+          },
+          400,
+        );
       }
 
       // Create wallet client with user's server-managed key

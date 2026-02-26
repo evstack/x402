@@ -1,4 +1,6 @@
 #!/usr/bin/env bun
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 /**
  * X402 E2E Test — runs against an already-running stack (evd + evgrpc + local-da).
  *
@@ -13,26 +15,24 @@
  * Usage:
  *   bun run scripts/x402-e2e-test.ts
  */
-import { spawn, type Subprocess } from "bun";
-import { dirname, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { type Subprocess, spawn } from "bun";
 
 import {
-  DEFAULT_RPC_URL,
-  DEFAULT_API_URL,
-  FAUCET_PRIVATE_KEY,
-  createEvolveChain,
   addressToAccountId,
-  waitForRpc,
-  waitForApi,
-  getRpcChainId,
-  decodePaymentRequired,
-  expectStatus,
+  createEvolveChain,
   createTestClients,
+  DEFAULT_API_URL,
+  DEFAULT_RPC_URL,
+  decodePaymentRequired,
   encodePaymentSignature,
-  submitPaymentTransaction,
-  generateRandomAccount,
+  expectStatus,
+  FAUCET_PRIVATE_KEY,
   fundAccount,
+  generateRandomAccount,
+  getRpcChainId,
+  submitPaymentTransaction,
+  waitForApi,
+  waitForRpc,
 } from "./x402-e2e-utils.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -47,7 +47,7 @@ function pipeOutput(proc: Subprocess, prefix: string): void {
           if (line.trim()) console.log(`[${prefix}] ${line}`);
         }
       },
-    })
+    }),
   );
   proc.stderr?.pipeTo(
     new WritableStream({
@@ -57,7 +57,7 @@ function pipeOutput(proc: Subprocess, prefix: string): void {
           if (line.trim()) console.error(`[${prefix}] ${line}`);
         }
       },
-    })
+    }),
   );
 }
 
@@ -166,7 +166,7 @@ async function main() {
       payerClients.walletClient,
       payerClients.publicClient,
       payToAccountId,
-      amount
+      amount,
     );
 
     if (!txHash) {

@@ -1,9 +1,9 @@
 import type {
-  SchemeNetworkServer,
-  PaymentRequirements,
-  Network,
-  Price,
   AssetAmount,
+  Network,
+  PaymentRequirements,
+  Price,
+  SchemeNetworkServer,
 } from "@x402/core/types";
 
 export class EvolveSchemeServer implements SchemeNetworkServer {
@@ -11,10 +11,7 @@ export class EvolveSchemeServer implements SchemeNetworkServer {
 
   async parsePrice(price: Price, _network: Network): Promise<AssetAmount> {
     // Evolve uses raw token amounts — price is already the amount
-    const amount =
-      typeof price === "object" && "amount" in price
-        ? price.amount
-        : String(price);
+    const amount = typeof price === "object" && "amount" in price ? price.amount : String(price);
 
     return { amount, asset: "native" };
   }

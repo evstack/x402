@@ -1,21 +1,21 @@
 import {
-  generateRegistrationOptions,
-  verifyRegistrationResponse,
   generateAuthenticationOptions,
-  verifyAuthenticationResponse,
-  type VerifiedRegistrationResponse,
+  generateRegistrationOptions,
   type VerifiedAuthenticationResponse,
+  type VerifiedRegistrationResponse,
+  verifyAuthenticationResponse,
+  verifyRegistrationResponse,
 } from "@simplewebauthn/server";
 import type {
-  RegistrationResponseJSON,
   AuthenticationResponseJSON,
+  AuthenticatorTransportFuture,
   PublicKeyCredentialCreationOptionsJSON,
   PublicKeyCredentialRequestOptionsJSON,
-  AuthenticatorTransportFuture,
+  RegistrationResponseJSON,
 } from "@simplewebauthn/types";
 import { Hono, type MiddlewareHandler } from "hono";
+import type { Address, Hex } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
-import { type Address, type Hex } from "viem";
 
 // Relying Party configuration
 const RP_NAME = "X402 Demo";
@@ -42,7 +42,10 @@ export type UserRecord = {
 // Stores
 const users = new Map<string, UserRecord>();
 const sessions = new Map<string, { userId: string; expiresAt: number }>();
-const pendingRegistrations = new Map<string, { challenge: string; userId: string; username: string }>();
+const pendingRegistrations = new Map<
+  string,
+  { challenge: string; userId: string; username: string }
+>();
 const pendingAuthentications = new Map<string, { challenge: string; userId: string }>();
 
 /**
@@ -50,7 +53,9 @@ const pendingAuthentications = new Map<string, { challenge: string; userId: stri
  */
 function generateUserId(): string {
   const bytes = crypto.getRandomValues(new Uint8Array(16));
-  return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
+  return Array.from(bytes)
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
 }
 
 /**
@@ -58,7 +63,9 @@ function generateUserId(): string {
  */
 function generateSessionToken(): string {
   const bytes = crypto.getRandomValues(new Uint8Array(32));
-  return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
+  return Array.from(bytes)
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
 }
 
 /**
@@ -309,7 +316,7 @@ export function createPasskeyRoutes() {
     }
 
     const storedCredential = user.credentials.find(
-      (cred) => cred.credentialId === body.credential.id
+      (cred) => cred.credentialId === body.credential.id,
     );
 
     if (!storedCredential) {

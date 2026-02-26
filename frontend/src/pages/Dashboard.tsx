@@ -1,10 +1,10 @@
-import { useEventStream } from "../hooks/useEventStream";
-import { useMetrics } from "../hooks/useMetrics";
 import { AgentGrid } from "../components/AgentGrid";
-import { PaymentStream } from "../components/PaymentStream";
 import { MetricsPanel } from "../components/MetricsPanel";
+import { PaymentStream } from "../components/PaymentStream";
 import { TpsCounter } from "../components/TpsCounter";
 import { useChainStats } from "../hooks/useChainStats";
+import { useEventStream } from "../hooks/useEventStream";
+import { useMetrics } from "../hooks/useMetrics";
 
 const WS_URL = `ws://${window.location.hostname}:3000/ws/events`;
 
@@ -106,9 +106,7 @@ export function Dashboard() {
         <div style={styles.status}>
           <TpsCounter value={metrics.currentTps} />
           <div style={styles.statusDot(connected)} />
-          <span style={styles.statusText}>
-            {connected ? "Connected" : "Disconnected"}
-          </span>
+          <span style={styles.statusText}>{connected ? "Connected" : "Disconnected"}</span>
         </div>
       </header>
 
@@ -130,7 +128,9 @@ export function Dashboard() {
             <div style={styles.chainCard}>
               <div style={styles.chainLabel}>Latest Block</div>
               <div style={styles.chainValue}>
-                {chainLoading || !chainStats ? "..." : Number(chainStats.blockNumber).toLocaleString()}
+                {chainLoading || !chainStats
+                  ? "..."
+                  : Number(chainStats.blockNumber).toLocaleString()}
               </div>
             </div>
             <div style={styles.chainCard}>
@@ -151,7 +151,9 @@ export function Dashboard() {
             <div style={styles.chainCard}>
               <div style={styles.chainLabel}>Observed Payment Txs</div>
               <div style={styles.chainValue}>
-                {chainLoading || !chainStats ? "..." : chainStats.observedPaymentTxs.toLocaleString()}
+                {chainLoading || !chainStats
+                  ? "..."
+                  : chainStats.observedPaymentTxs.toLocaleString()}
               </div>
             </div>
           </div>

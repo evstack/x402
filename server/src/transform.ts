@@ -1,14 +1,12 @@
+import type { RouteConfig, RoutesConfig } from "@x402/core/http";
+import type { Network } from "@x402/core/types";
 import { Hono } from "hono";
 import type { Address } from "viem";
-import type { Network } from "@x402/core/types";
-import type { RouteConfig, RoutesConfig } from "@x402/core/http";
 
 // Evolve payment configuration
-export const TREASURY_ADDRESS: Address =
-  (process.env.TREASURY_ADDRESS ??
-    "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC") as Address;
-export const NETWORK: Network =
-  (process.env.EVOLVE_NETWORK ?? "evolve:1") as Network;
+export const TREASURY_ADDRESS: Address = (process.env.TREASURY_ADDRESS ??
+  "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC") as Address;
+export const NETWORK: Network = (process.env.EVOLVE_NETWORK ?? "evolve:1") as Network;
 
 type TransformRequest = {
   input: string;
@@ -62,7 +60,10 @@ export function createTransformRoutes() {
    */
   app.post("/reverse", (c) => {
     const input = c.get("transformInput");
-    return c.json<TransformResponse>({ output: input.split("").reverse().join(""), operation: "reverse" });
+    return c.json<TransformResponse>({
+      output: input.split("").reverse().join(""),
+      operation: "reverse",
+    });
   });
 
   /**
@@ -81,7 +82,9 @@ export function createTransformRoutes() {
   app.post("/hash", async (c) => {
     const input = c.get("transformInput");
     const hashBuffer = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(input));
-    const hashHex = Array.from(new Uint8Array(hashBuffer)).map((b) => b.toString(16).padStart(2, "0")).join("");
+    const hashHex = Array.from(new Uint8Array(hashBuffer))
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
     return c.json<TransformResponse>({ output: `0x${hashHex}`, operation: "hash" });
   });
 

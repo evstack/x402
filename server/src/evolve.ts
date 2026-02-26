@@ -1,12 +1,12 @@
 import {
-  createPublicClient,
-  http,
-  defineChain,
   type Address,
-  type Hash,
-  type PublicClient,
-  type HttpTransport,
   type Chain,
+  createPublicClient,
+  defineChain,
+  type Hash,
+  type HttpTransport,
+  http,
+  type PublicClient,
 } from "viem";
 import { createEvolveGrpcClient, type EvolveGrpcClient } from "./grpc-client.js";
 
@@ -87,10 +87,7 @@ export function createEvolveClientSync(rpcUrl?: string): EvolveClient {
 /**
  * Query token balance for an address
  */
-export async function getBalance(
-  client: EvolveClient,
-  address: Address
-): Promise<bigint> {
+export async function getBalance(client: EvolveClient, address: Address): Promise<bigint> {
   if (client.mode === "grpc" && client.grpc) {
     return client.grpc.getBalance(address);
   }
@@ -100,10 +97,7 @@ export async function getBalance(
 /**
  * Query transaction count (nonce) for an address
  */
-export async function getNonce(
-  client: EvolveClient,
-  address: Address
-): Promise<number> {
+export async function getNonce(client: EvolveClient, address: Address): Promise<number> {
   if (client.mode === "grpc" && client.grpc) {
     return client.grpc.getTransactionCount(address);
   }
@@ -115,7 +109,7 @@ export async function getNonce(
  */
 export async function getTransactionReceipt(
   client: EvolveClient,
-  hash: Hash
+  hash: Hash,
 ): Promise<{ status: "success" | "reverted"; blockNumber: bigint; gasUsed: bigint } | null> {
   if (client.mode === "grpc" && client.grpc) {
     const receipt = await client.grpc.getTransactionReceipt(hash);
@@ -142,7 +136,7 @@ export async function getTransactionReceipt(
 export async function waitForTransaction(
   client: EvolveClient,
   hash: Hash,
-  timeoutMs: number = 30000
+  timeoutMs: number = 30000,
 ): Promise<{ status: "success" | "reverted"; blockNumber: bigint }> {
   const startTime = Date.now();
 
@@ -191,10 +185,7 @@ export async function getChainId(client: EvolveClient): Promise<number> {
 /**
  * Check if transaction was successful
  */
-export async function isTransactionSuccessful(
-  client: EvolveClient,
-  hash: Hash
-): Promise<boolean> {
+export async function isTransactionSuccessful(client: EvolveClient, hash: Hash): Promise<boolean> {
   const receipt = await getTransactionReceipt(client, hash);
   return receipt?.status === "success";
 }
@@ -210,7 +201,7 @@ export function closeClient(client: EvolveClient): void {
 
 // Custom Evolve RPC methods (evolve_* namespace)
 // These use the underlying transport directly since viem doesn't know about evolve_* methods
-export async function listModules(client: EvolveClient): Promise<string[]> {
+export async function listModules(_client: EvolveClient): Promise<string[]> {
   const response = await fetch(process.env.EVOLVE_RPC_URL ?? "http://127.0.0.1:8545", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -226,10 +217,7 @@ export async function listModules(client: EvolveClient): Promise<string[]> {
   return data.result ?? [];
 }
 
-export async function getModuleSchema(
-  client: EvolveClient,
-  moduleId: string
-): Promise<unknown> {
+export async function getModuleSchema(_client: EvolveClient, moduleId: string): Promise<unknown> {
   const response = await fetch(process.env.EVOLVE_RPC_URL ?? "http://127.0.0.1:8545", {
     method: "POST",
     headers: { "Content-Type": "application/json" },

@@ -1,18 +1,19 @@
 import {
   type Address,
   type Chain,
+  createPublicClient,
+  createWalletClient,
+  defineChain,
   type Hash,
   type Hex,
   type HttpTransport,
+  http,
+  keccak256,
   type PublicClient,
   type WalletClient,
-  createWalletClient,
-  createPublicClient,
-  keccak256,
-  http,
-  defineChain,
 } from "viem";
-import { privateKeyToAccount, type PrivateKeyAccount } from "viem/accounts";
+import { type PrivateKeyAccount, privateKeyToAccount } from "viem/accounts";
+import { accountIdToAddress, addressToAccountId, buildTransferData } from "./evolve-utils.js";
 import type {
   AgentConfig,
   PaymentPayload,
@@ -20,11 +21,6 @@ import type {
   RequestResult,
   WeightedEndpoint,
 } from "./types.js";
-import {
-  accountIdToAddress,
-  addressToAccountId,
-  buildTransferData,
-} from "./evolve-utils.js";
 
 const MAX_INFLIGHT = 5;
 
@@ -41,11 +37,7 @@ export class Agent {
   private activeWorkers: Promise<void>[] = [];
   private onResult: ((result: RequestResult) => void) | null = null;
 
-  constructor(
-    config: AgentConfig,
-    serverUrl: string,
-    rpcUrl: string
-  ) {
+  constructor(config: AgentConfig, serverUrl: string, rpcUrl: string) {
     this.config = config;
     this.serverUrl = serverUrl;
     this.rpcUrl = rpcUrl;
@@ -175,7 +167,7 @@ export class Agent {
       }
 
       const paymentRequired = JSON.parse(
-        Buffer.from(paymentHeader, "base64").toString("utf-8")
+        Buffer.from(paymentHeader, "base64").toString("utf-8"),
       ) as PaymentRequired;
 
       const amount = BigInt(paymentRequired.accepts[0].amount);
@@ -194,9 +186,7 @@ export class Agent {
         payload: { txHash },
       };
 
-      const paymentSignature = Buffer.from(
-        JSON.stringify(paymentPayload)
-      ).toString("base64");
+      const paymentSignature = Buffer.from(JSON.stringify(paymentPayload)).toString("base64");
 
       const finalResponse = await fetch(url, {
         method: endpoint.method,
@@ -296,13 +286,8 @@ export class Agent {
 
       throw err;
     }
-
-    try {
-      await this.publicClient.waitForTransactionReceipt({ hash, timeout: 60_000 });
-      return hash;
-    } catch (err) {
-      throw err;
-    }
+    await this.publicClient.waitForTransactionReceipt({ hash, timeout: 60_000 });
+    return hash;
   }
 
   async getBalance(): Promise<bigint> {

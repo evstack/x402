@@ -1,14 +1,9 @@
-import { useState, useCallback, useEffect } from "react";
 import {
-  startRegistration as webauthnRegister,
   startAuthentication as webauthnAuth,
+  startRegistration as webauthnRegister,
 } from "@simplewebauthn/browser";
-import {
-  startRegistration,
-  verifyRegistration,
-  startLogin,
-  verifyLogin,
-} from "../lib/api";
+import { useCallback, useEffect, useState } from "react";
+import { startLogin, startRegistration, verifyLogin, verifyRegistration } from "../lib/api";
 
 type Session = {
   token: string;

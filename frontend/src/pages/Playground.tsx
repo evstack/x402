@@ -1,13 +1,7 @@
-import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import { usePasskey } from "../hooks/usePasskey";
-import {
-  getPricing,
-  transform,
-  transfer,
-  ApiError,
-  createPaymentSignature,
-} from "../lib/api";
+import { ApiError, createPaymentSignature, getPricing, transfer, transform } from "../lib/api";
 
 const styles = {
   grid: {
@@ -140,8 +134,8 @@ export function Playground() {
         setOutput(result.output);
         setSteps((prev) =>
           prev.map((s, i) =>
-            i === 0 ? { ...s, status: "success", content: "No payment required" } : s
-          )
+            i === 0 ? { ...s, status: "success", content: "No payment required" } : s,
+          ),
         );
         return;
       } catch (err) {
@@ -160,25 +154,29 @@ export function Playground() {
                   status: "success",
                   content: `402 Payment Required: ${requirements.accepts[0].amount} tokens`,
                 }
-              : s
-          )
+              : s,
+          ),
         );
 
         // Step 2: Pay
-        addStep("Payment", `Transferring ${requirements.accepts[0].amount} to treasury...`, "pending");
+        addStep(
+          "Payment",
+          `Transferring ${requirements.accepts[0].amount} to treasury...`,
+          "pending",
+        );
 
         const paymentResult = await transfer(
           session.token,
           requirements.accepts[0].payTo,
-          requirements.accepts[0].amount
+          requirements.accepts[0].amount,
         );
 
         setSteps((prev) =>
           prev.map((s, i) =>
             i === 1
               ? { ...s, status: "success", content: `TX: ${paymentResult.txHash.slice(0, 22)}...` }
-              : s
-          )
+              : s,
+          ),
         );
 
         // Step 3: Retry with payment proof
@@ -188,9 +186,7 @@ export function Playground() {
         const result = await transform(operation, input, signature);
 
         setSteps((prev) =>
-          prev.map((s, i) =>
-            i === 2 ? { ...s, status: "success", content: "200 OK" } : s
-          )
+          prev.map((s, i) => (i === 2 ? { ...s, status: "success", content: "200 OK" } : s)),
         );
 
         setOutput(result.output);
@@ -214,16 +210,22 @@ export function Playground() {
 
       <div style={styles.grid}>
         <div style={styles.card}>
-          <label style={styles.label}>Input</label>
+          <label style={styles.label} htmlFor="playground-input">
+            Input
+          </label>
           <textarea
+            id="playground-input"
             style={styles.textarea}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Enter text to transform..."
           />
 
-          <label style={{ ...styles.label, marginTop: 16 }}>Operation</label>
+          <label style={{ ...styles.label, marginTop: 16 }} htmlFor="playground-operation">
+            Operation
+          </label>
           <select
+            id="playground-operation"
             style={styles.select}
             value={operation}
             onChange={(e) => setOperation(e.target.value as Operation)}
@@ -235,6 +237,7 @@ export function Playground() {
           </select>
 
           <button
+            type="button"
             style={{ ...styles.button, ...(loading ? styles.disabled : {}) }}
             onClick={handleSubmit}
             disabled={loading || !input}
@@ -244,7 +247,7 @@ export function Playground() {
         </div>
 
         <div style={styles.card}>
-          <label style={styles.label}>X402 Flow</label>
+          <span style={styles.label}>X402 Flow</span>
 
           {steps.length === 0 ? (
             <div style={{ ...styles.output, color: "#666" }}>
@@ -252,8 +255,8 @@ export function Playground() {
             </div>
           ) : (
             <div>
-              {steps.map((step, i) => (
-                <div key={i} style={styles.step}>
+              {steps.map((step, stepIndex) => (
+                <div key={step.label} style={styles.step}>
                   <div
                     style={{
                       ...styles.stepLabel,
@@ -261,7 +264,7 @@ export function Playground() {
                       ...(step.status === "success" ? styles.success : {}),
                     }}
                   >
-                    {i + 1}. {step.label}
+                    {stepIndex + 1}. {step.label}
                   </div>
                   <div style={styles.stepContent}>{step.content}</div>
                 </div>
@@ -271,7 +274,7 @@ export function Playground() {
 
           {output && (
             <>
-              <label style={{ ...styles.label, marginTop: 16 }}>Output</label>
+              <span style={{ ...styles.label, marginTop: 16 }}>Output</span>
               <div style={styles.output}>{output}</div>
             </>
           )}

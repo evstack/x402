@@ -1,27 +1,22 @@
+import { x402ResourceServer } from "@x402/core/server";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
+import { eventEmitter } from "./events.js";
 import {
   createEvolveClient,
   createEvolveClientSync,
+  type EvolveClient,
+  getBalance,
   getBlockNumber,
   getChainId,
-  getBalance,
-  type EvolveClient,
 } from "./evolve.js";
-import { createWalletRoutes } from "./wallet.js";
 import { createPasskeyRoutes } from "./passkey.js";
-import {
-  createTransformRoutes,
-  TRANSFORM_ROUTES,
-  TREASURY_ADDRESS,
-  NETWORK,
-} from "./transform.js";
-import { eventEmitter } from "./events.js";
-import { x402ResourceServer } from "@x402/core/server";
+import { createTransformRoutes, NETWORK, TRANSFORM_ROUTES, TREASURY_ADDRESS } from "./transform.js";
+import { createWalletRoutes } from "./wallet.js";
 import { EvolveFacilitatorClient } from "./x402/evolve-facilitator.js";
 import { EvolveSchemeServer } from "./x402/evolve-scheme-server.js";
-import { paymentMiddleware, captureAgentId, registerEventHooks } from "./x402/hono-middleware.js";
+import { captureAgentId, paymentMiddleware, registerEventHooks } from "./x402/hono-middleware.js";
 
 const EVOLVE_RPC_URL = process.env.EVOLVE_RPC_URL ?? "http://127.0.0.1:8545";
 
@@ -59,7 +54,6 @@ async function callRpc<T>(method: string, params: unknown[]): Promise<T | null> 
   }
 }
 
-
 function createApp(client: EvolveClient) {
   const app = new Hono();
 
@@ -72,7 +66,7 @@ function createApp(client: EvolveClient) {
       allowMethods: ["GET", "POST", "OPTIONS"],
       allowHeaders: ["Content-Type", "Authorization", "PAYMENT-SIGNATURE", "X-Agent-ID"],
       exposeHeaders: ["PAYMENT-REQUIRED", "PAYMENT-RESPONSE"],
-    })
+    }),
   );
 
   // Apply X402 middleware for protected routes
@@ -113,7 +107,7 @@ function createApp(client: EvolveClient) {
           error: "Cannot connect to Evolve node",
           rpcUrl: process.env.EVOLVE_RPC_URL ?? "http://127.0.0.1:8545",
         },
-        503
+        503,
       );
     }
   });
@@ -125,7 +119,10 @@ function createApp(client: EvolveClient) {
 
   // Pricing info endpoint
   app.get("/api/pricing", (c) => {
-    const routes = TRANSFORM_ROUTES as Record<string, { accepts: { price: string }; description?: string }>;
+    const routes = TRANSFORM_ROUTES as Record<
+      string,
+      { accepts: { price: string }; description?: string }
+    >;
     const pricing = Object.entries(routes).map(([route, config]) => ({
       route,
       price: String(config.accepts.price),
@@ -192,10 +189,7 @@ function createApp(client: EvolveClient) {
       });
     } catch (err) {
       console.error("Failed to fetch chain stats:", err);
-      return c.json(
-        { error: "Failed to fetch chain stats from ev-node" },
-        503
-      );
+      return c.json({ error: "Failed to fetch chain stats from ev-node" }, 503);
     }
   });
 
@@ -207,7 +201,7 @@ function createApp(client: EvolveClient) {
         address: TREASURY_ADDRESS,
         balance: balance.toString(),
       });
-    } catch (err) {
+    } catch (_err) {
       return c.json({ error: "Failed to get treasury balance" }, 500);
     }
   });

@@ -1,5 +1,5 @@
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { usePasskey } from "../hooks/usePasskey";
 import { getMyWallet, requestFaucet } from "../lib/api";
 
@@ -69,7 +69,11 @@ export function Wallet() {
   const queryClient = useQueryClient();
   const [faucetResult, setFaucetResult] = useState<string | null>(null);
 
-  const { data: wallet, isLoading, error } = useQuery({
+  const {
+    data: wallet,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ["wallet", session?.token],
     queryFn: () => getMyWallet(session!.token),
     enabled: !!session?.token,
@@ -116,6 +120,7 @@ export function Wallet() {
         </p>
         <div style={styles.row}>
           <button
+            type="button"
             style={{
               ...styles.button,
               ...(faucetMutation.isPending ? styles.disabled : {}),
@@ -130,11 +135,7 @@ export function Wallet() {
           </button>
         </div>
         {faucetResult && (
-          <div
-            style={
-              faucetResult.startsWith("Error") ? styles.error : styles.success
-            }
-          >
+          <div style={faucetResult.startsWith("Error") ? styles.error : styles.success}>
             {faucetResult}
           </div>
         )}

@@ -1,10 +1,10 @@
-import type { Hash } from "viem";
-import type { MiddlewareHandler } from "hono";
 import type { x402ResourceServer } from "@x402/core/server";
+import type { MiddlewareHandler } from "hono";
+import type { Hash } from "viem";
 import {
-  emitPaymentSubmitted,
   emitPaymentConfirmed,
   emitPaymentFailed,
+  emitPaymentSubmitted,
   emitRequestServed,
 } from "../events.js";
 
@@ -40,7 +40,9 @@ export function captureAgentId(): MiddlewareHandler {
         if (decoded?.payload?.txHash) {
           txAgentMap.set(decoded.payload.txHash, agentId);
         }
-      } catch { /* ignore malformed headers */ }
+      } catch {
+        /* ignore malformed headers */
+      }
     }
     await next();
   };
@@ -52,7 +54,11 @@ function extractTx(payload: { payload: Record<string, unknown> }) {
 }
 
 function extractEndpoint(payload: { resource?: { url?: string } }): string {
-  try { return new URL(payload.resource?.url ?? "").pathname; } catch { return "unknown"; }
+  try {
+    return new URL(payload.resource?.url ?? "").pathname;
+  } catch {
+    return "unknown";
+  }
 }
 
 export function registerEventHooks(resourceServer: x402ResourceServer): void {
@@ -60,7 +66,13 @@ export function registerEventHooks(resourceServer: x402ResourceServer): void {
     if (!result.isValid) return;
     const { txHash, agentId } = extractTx(paymentPayload);
     verifyTimestamps.set(txHash, Date.now());
-    emitPaymentSubmitted(agentId, txHash as Hash, requirements.amount, undefined, requirements.payTo as `0x${string}`);
+    emitPaymentSubmitted(
+      agentId,
+      txHash as Hash,
+      requirements.amount,
+      undefined,
+      requirements.payTo as `0x${string}`,
+    );
   });
 
   resourceServer.onAfterSettle(async ({ paymentPayload }) => {

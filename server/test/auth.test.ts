@@ -1,6 +1,6 @@
-import { describe, it, expect } from "bun:test";
+import { describe, expect, it } from "bun:test";
 import { Hono } from "hono";
-import { createPasskeyRoutes, authMiddleware } from "../src/passkey.js";
+import { authMiddleware, createPasskeyRoutes } from "../src/passkey.js";
 
 function createTestApp() {
   const app = new Hono();

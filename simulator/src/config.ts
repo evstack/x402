@@ -43,7 +43,7 @@ export function createPoolConfig(options: CLIOptions): PoolConfig {
   const faucetKey = options.faucetKey ?? process.env.FAUCET_PRIVATE_KEY;
   if (!faucetKey) {
     throw new Error(
-      "Faucet private key required. Set FAUCET_PRIVATE_KEY env var or use --faucet-key"
+      "Faucet private key required. Set FAUCET_PRIVATE_KEY env var or use --faucet-key",
     );
   }
 

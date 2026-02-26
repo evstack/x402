@@ -45,9 +45,7 @@ const styles = {
 };
 
 export function AgentGrid({ agents }: AgentGridProps) {
-  const agentList = Array.from(agents.values()).sort((a, b) =>
-    a.id.localeCompare(b.id)
-  );
+  const agentList = Array.from(agents.values()).sort((a, b) => a.id.localeCompare(b.id));
 
   if (agentList.length === 0) {
     return <div style={styles.empty}>No agents connected</div>;
@@ -57,9 +55,7 @@ export function AgentGrid({ agents }: AgentGridProps) {
     <div style={styles.grid}>
       {agentList.map((agent) => {
         const avgLatency =
-          agent.totalRequests > 0
-            ? Math.round(agent.totalLatencyMs / agent.totalRequests)
-            : 0;
+          agent.totalRequests > 0 ? Math.round(agent.totalLatencyMs / agent.totalRequests) : 0;
         const successRate =
           agent.totalRequests > 0
             ? Math.round((agent.successfulRequests / agent.totalRequests) * 100)

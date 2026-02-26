@@ -117,9 +117,7 @@ export function Landing() {
     <div>
       <div style={styles.hero}>
         <h1 style={styles.title}>X402 Demo</h1>
-        <p style={styles.subtitle}>
-          Pay-per-request API monetization with HTTP 402
-        </p>
+        <p style={styles.subtitle}>Pay-per-request API monetization with HTTP 402</p>
 
         <form style={styles.form} onSubmit={handleSubmit}>
           {mode === "register" && (
@@ -134,16 +132,12 @@ export function Landing() {
             />
           )}
 
-          <button
-            type="submit"
-            style={{ ...styles.button, ...styles.primary }}
-            disabled={loading}
-          >
+          <button type="submit" style={{ ...styles.button, ...styles.primary }} disabled={loading}>
             {loading
               ? "..."
               : mode === "register"
-              ? "Create Wallet with Passkey"
-              : "Login with Passkey"}
+                ? "Create Wallet with Passkey"
+                : "Login with Passkey"}
           </button>
 
           {error && <p style={styles.error}>{error}</p>}
@@ -159,9 +153,7 @@ export function Landing() {
             style={{ ...styles.button, ...styles.secondary }}
             onClick={() => setMode(mode === "register" ? "login" : "register")}
           >
-            {mode === "register"
-              ? "Login to existing wallet"
-              : "Create new wallet"}
+            {mode === "register" ? "Login to existing wallet" : "Create new wallet"}
           </button>
         </form>
       </div>
@@ -169,21 +161,15 @@ export function Landing() {
       <div style={styles.features}>
         <div style={styles.feature}>
           <h3 style={styles.featureTitle}>Passkey Wallet</h3>
-          <p style={styles.featureText}>
-            Secure, phishing-resistant authentication with WebAuthn
-          </p>
+          <p style={styles.featureText}>Secure, phishing-resistant authentication with WebAuthn</p>
         </div>
         <div style={styles.feature}>
           <h3 style={styles.featureTitle}>HTTP 402</h3>
-          <p style={styles.featureText}>
-            Machine-readable payment flows using the X402 protocol
-          </p>
+          <p style={styles.featureText}>Machine-readable payment flows using the X402 protocol</p>
         </div>
         <div style={styles.feature}>
           <h3 style={styles.featureTitle}>Micropayments</h3>
-          <p style={styles.featureText}>
-            Pay-per-request for API access with instant settlement
-          </p>
+          <p style={styles.featureText}>Pay-per-request for API access with instant settlement</p>
         </div>
       </div>
     </div>

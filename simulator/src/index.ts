@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 import { program } from "commander";
-import { AgentPool } from "./pool.js";
 import { createPoolConfig, validateConfig } from "./config.js";
+import { AgentPool } from "./pool.js";
 
 program
   .name("x402-simulator")
@@ -11,11 +11,7 @@ program
   .option("-r, --rps <number>", "Target requests per second", "10")
   .option("-s, --server <url>", "X402 server URL", "http://localhost:3000")
   .option("-e, --evolve-rpc <url>", "Evolve RPC URL", "http://localhost:8545")
-  .option(
-    "-f, --funding <amount>",
-    "Funding amount per agent (token units, 6 decimals)",
-    "1000000"
-  )
+  .option("-f, --funding <amount>", "Funding amount per agent (token units, 6 decimals)", "1000000")
   .option("-k, --faucet-key <key>", "Faucet private key (or set FAUCET_PRIVATE_KEY)")
   .option("-d, --duration <seconds>", "Run duration in seconds (0 = infinite)", "0")
   .parse();
@@ -40,7 +36,9 @@ async function main() {
   const errors = validateConfig(config);
   if (errors.length > 0) {
     console.error("Configuration errors:");
-    errors.forEach((e) => console.error(`  - ${e}`));
+    for (const e of errors) {
+      console.error(`  - ${e}`);
+    }
     process.exit(1);
   }
 

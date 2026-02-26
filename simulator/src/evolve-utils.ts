@@ -1,5 +1,5 @@
-import { bytesToHex, keccak256, toBytes } from "viem";
 import type { Hex } from "viem";
+import { bytesToHex, keccak256, toBytes } from "viem";
 import { generatePrivateKey } from "viem/accounts";
 
 // Token account candidates (the token gets one of these IDs during genesis)

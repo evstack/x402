@@ -3,16 +3,16 @@
  */
 import {
   bytesToHex,
+  type Chain,
   createPublicClient,
   createWalletClient,
   defineChain,
+  type HttpTransport,
   http,
   keccak256,
-  toBytes,
   type PublicClient,
+  toBytes,
   type WalletClient,
-  type Chain,
-  type HttpTransport,
 } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 
@@ -118,7 +118,7 @@ export async function waitForUrl(
   url: string,
   method: string,
   body: string | null,
-  timeoutMs = 60_000
+  timeoutMs = 60_000,
 ): Promise<void> {
   const start = Date.now();
   while (Date.now() - start < timeoutMs) {
@@ -146,7 +146,7 @@ export async function waitForRpc(rpcUrl = DEFAULT_RPC_URL, timeoutMs = 60_000): 
     rpcUrl,
     "POST",
     JSON.stringify({ jsonrpc: "2.0", id: 1, method: "eth_blockNumber", params: [] }),
-    timeoutMs
+    timeoutMs,
   );
 }
 
@@ -238,7 +238,7 @@ export async function fundAccount(
 export function createTestClients(
   chain: Chain,
   rpcUrl = DEFAULT_RPC_URL,
-  privateKey = FAUCET_PRIVATE_KEY
+  privateKey = FAUCET_PRIVATE_KEY,
 ): {
   account: ReturnType<typeof privateKeyToAccount>;
   walletClient: WalletClient<HttpTransport, Chain>;
@@ -277,7 +277,7 @@ export async function submitPaymentTransaction(
   publicClient: PublicClient<HttpTransport, Chain>,
   payToAccountId: bigint,
   amount: bigint,
-  receiptTimeout = 30_000
+  receiptTimeout = 30_000,
 ): Promise<`0x${string}` | null> {
   for (const tokenAccountId of TOKEN_ACCOUNT_CANDIDATES) {
     const tokenAddress = accountIdToAddress(tokenAccountId);

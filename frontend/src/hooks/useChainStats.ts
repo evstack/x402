@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 import {
   ApiError,
+  type ChainStats,
   getChainStats,
   getEventsSummary,
   getHealth,
   getLatestBlockTxCountViaRpc,
-  type ChainStats,
 } from "../lib/api";
 
 export interface UseChainStatsResult {

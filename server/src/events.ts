@@ -1,4 +1,4 @@
-import type { Hash, Address } from "viem";
+import type { Address, Hash } from "viem";
 
 // Event types for the dashboard
 export type PaymentEventType =
@@ -120,7 +120,7 @@ export function emitPaymentSubmitted(
   txHash: Hash,
   amount: string,
   from?: Address,
-  to?: Address
+  to?: Address,
 ): void {
   eventEmitter.emit({
     type: "payment_submitted",
@@ -134,11 +134,7 @@ export function emitPaymentSubmitted(
 }
 
 // Helper to emit payment confirmed event
-export function emitPaymentConfirmed(
-  agentId: string,
-  txHash: Hash,
-  latencyMs?: number
-): void {
+export function emitPaymentConfirmed(agentId: string, txHash: Hash, latencyMs?: number): void {
   eventEmitter.emit({
     type: "payment_confirmed",
     timestamp: Date.now(),
@@ -149,11 +145,7 @@ export function emitPaymentConfirmed(
 }
 
 // Helper to emit payment failed event
-export function emitPaymentFailed(
-  agentId: string,
-  txHash: Hash,
-  error: string
-): void {
+export function emitPaymentFailed(agentId: string, txHash: Hash, error: string): void {
   eventEmitter.emit({
     type: "payment_failed",
     timestamp: Date.now(),
@@ -168,7 +160,7 @@ export function emitRequestServed(
   agentId: string,
   endpoint: string,
   latencyMs: number,
-  txHash?: Hash
+  txHash?: Hash,
 ): void {
   eventEmitter.emit({
     type: "request_served",

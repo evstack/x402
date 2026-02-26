@@ -3,6 +3,7 @@ default:
 
 # Install all dependencies
 install:
+    bun install
     cd frontend && bun install
     cd server && bun install
     cd simulator && bun install
@@ -26,11 +27,22 @@ sim:
 sim-dev:
     cd simulator && bun run dev
 
+# Lint and format check
+lint:
+    bunx biome check .
+
+# Lint with auto-fix
+lint-fix:
+    bunx biome check --write .
+
 # Typecheck all packages
 typecheck:
     cd server && bun run typecheck
     cd frontend && bun run typecheck
     cd simulator && bun run typecheck
+
+# Run all checks (lint + typecheck + test)
+check: lint typecheck test
 
 # Run server tests
 test:

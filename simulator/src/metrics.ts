@@ -70,10 +70,7 @@ export class MetricsCollector {
 
     // Calculate totals
     const totalRequests = agents.reduce((sum, a) => sum + a.totalRequests, 0);
-    const successfulRequests = agents.reduce(
-      (sum, a) => sum + a.successfulRequests,
-      0
-    );
+    const successfulRequests = agents.reduce((sum, a) => sum + a.successfulRequests, 0);
     const failedRequests = agents.reduce((sum, a) => sum + a.failedRequests, 0);
 
     // Calculate latency percentiles
@@ -116,9 +113,7 @@ export class MetricsCollector {
   formatSummary(): string {
     const m = this.getPoolMetrics();
     const successRate =
-      m.totalRequests > 0
-        ? ((m.successfulRequests / m.totalRequests) * 100).toFixed(1)
-        : "0.0";
+      m.totalRequests > 0 ? ((m.successfulRequests / m.totalRequests) * 100).toFixed(1) : "0.0";
 
     const lines = [
       "",

@@ -1,10 +1,10 @@
-import { describe, it, expect } from "bun:test";
-import { Hono } from "hono";
-import type { EvolveClient } from "../src/evolve.js";
-import type { Address } from "viem";
-import type { Network } from "@x402/core/types";
+import { describe, expect, it } from "bun:test";
 import type { RoutesConfig } from "@x402/core/http";
 import { x402ResourceServer } from "@x402/core/server";
+import type { Network } from "@x402/core/types";
+import { Hono } from "hono";
+import type { Address } from "viem";
+import type { EvolveClient } from "../src/evolve.js";
 import { EvolveFacilitatorClient } from "../src/x402/evolve-facilitator.js";
 import { EvolveSchemeServer } from "../src/x402/evolve-scheme-server.js";
 import { paymentMiddleware } from "../src/x402/hono-middleware.js";
@@ -47,7 +47,11 @@ function createTestApp(client: EvolveClient) {
 
 function encodePayment(
   txHash: string,
-  resource = { url: "http://localhost/api/paid", description: "Test", mimeType: "application/json" },
+  resource = {
+    url: "http://localhost/api/paid",
+    description: "Test",
+    mimeType: "application/json",
+  },
   accepted = {
     scheme: "exact",
     network: TEST_NETWORK,
@@ -64,7 +68,7 @@ function encodePayment(
       resource,
       accepted,
       payload: { txHash },
-    })
+    }),
   ).toString("base64");
 }
 
@@ -87,7 +91,7 @@ describe("X402 Payment Flow", () => {
 
   it("allows access with valid payment proof", async () => {
     const app = createTestApp(createMockClient("success"));
-    const txHash = "0x" + "a".repeat(64);
+    const txHash = `0x${"a".repeat(64)}`;
 
     const res = await app.request("/api/paid", {
       method: "POST",
@@ -105,7 +109,7 @@ describe("X402 Payment Flow", () => {
 
     const res = await app.request("/api/paid", {
       method: "POST",
-      headers: { "PAYMENT-SIGNATURE": encodePayment("0x" + "b".repeat(64)) },
+      headers: { "PAYMENT-SIGNATURE": encodePayment(`0x${"b".repeat(64)}`) },
     });
 
     expect(res.status).toBe(402);
@@ -115,7 +119,7 @@ describe("X402 Payment Flow", () => {
 
   it("rejects reused transaction (replay protection)", async () => {
     const app = createTestApp(createMockClient("success"));
-    const txHash = "0x" + "c".repeat(64);
+    const txHash = `0x${"c".repeat(64)}`;
     const headers = { "PAYMENT-SIGNATURE": encodePayment(txHash) };
 
     const first = await app.request("/api/paid", { method: "POST", headers });
