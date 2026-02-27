@@ -245,8 +245,10 @@ export class Agent {
       });
     }
 
+    // payTo is an Ethereum address — derive the EOA AccountId (32 bytes)
     const payToAccountId = addressToAccountId(to);
     const data = buildTransferData(payToAccountId, amount);
+    // tokenAccountId is already a 32-byte Uint8Array — derive its contract address
     const tokenAddress = accountIdToAddress(this.config.tokenAccountId);
 
     // Claim nonce synchronously before any await to prevent races between concurrent workers
@@ -300,7 +302,7 @@ export function createAgentConfig(
   privateKey: Hex,
   requestsPerSecond: number,
   endpoints: WeightedEndpoint[],
-  tokenAccountId: bigint,
+  tokenAccountId: Uint8Array,
   chainId: number,
 ): AgentConfig {
   const account = privateKeyToAccount(privateKey);

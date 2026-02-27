@@ -1,7 +1,6 @@
 import { AgentGrid } from "../components/AgentGrid";
 import { MetricsPanel } from "../components/MetricsPanel";
 import { PaymentStream } from "../components/PaymentStream";
-import { TpsCounter } from "../components/TpsCounter";
 import { useChainStats } from "../hooks/useChainStats";
 import { useEventStream } from "../hooks/useEventStream";
 import { useMetrics } from "../hooks/useMetrics";
@@ -30,7 +29,12 @@ const styles = {
   status: {
     display: "flex",
     alignItems: "center",
-    gap: 8,
+    gap: 16,
+  },
+  statusGroup: {
+    display: "flex",
+    alignItems: "center",
+    gap: 6,
   },
   statusDot: (connected: boolean) => ({
     width: 8,
@@ -98,15 +102,22 @@ export function Dashboard() {
   const { events, connected, error } = useEventStream(WS_URL);
   const metrics = useMetrics(events);
   const { data: chainStats, error: chainError, loading: chainLoading } = useChainStats(1000);
+  const chainConnected = !chainLoading && chainStats !== null && chainError === null;
+
 
   return (
     <div style={styles.container}>
       <header style={styles.header}>
         <h1 style={styles.title}>X402 Agent Simulator</h1>
         <div style={styles.status}>
-          <TpsCounter value={metrics.currentTps} />
-          <div style={styles.statusDot(connected)} />
-          <span style={styles.statusText}>{connected ? "Connected" : "Disconnected"}</span>
+          <div style={styles.statusGroup}>
+            <div style={styles.statusDot(chainConnected)} />
+            <span style={styles.statusText}>Chain</span>
+          </div>
+          <div style={styles.statusGroup}>
+            <div style={styles.statusDot(connected)} />
+            <span style={styles.statusText}>WS</span>
+          </div>
         </div>
       </header>
 
@@ -133,35 +144,12 @@ export function Dashboard() {
                   : Number(chainStats.blockNumber).toLocaleString()}
               </div>
             </div>
-            <div style={styles.chainCard}>
-              <div style={styles.chainLabel}>Txs In Latest Block</div>
-              <div style={styles.chainValue}>
-                {chainLoading || !chainStats
-                  ? "..."
-                  : chainStats.latestBlockTxCount === null
-                    ? "n/a"
-                    : chainStats.latestBlockTxCount.toLocaleString()}
-              </div>
-              <div style={styles.chainSubvalue}>
-                {chainStats?.latestBlockTimestamp
-                  ? new Date(chainStats.latestBlockTimestamp).toLocaleTimeString()
-                  : "timestamp n/a"}
-              </div>
-            </div>
-            <div style={styles.chainCard}>
-              <div style={styles.chainLabel}>Observed Payment Txs</div>
-              <div style={styles.chainValue}>
-                {chainLoading || !chainStats
-                  ? "..."
-                  : chainStats.observedPaymentTxs.toLocaleString()}
-              </div>
-            </div>
           </div>
         </div>
 
         <div style={{ ...styles.section, ...styles.fullWidth }}>
           <div style={styles.sectionTitle}>Metrics</div>
-          <MetricsPanel metrics={metrics} />
+          <MetricsPanel metrics={metrics} totalRequests={chainStats?.observedServedRequests} />
         </div>
 
         <div style={styles.section}>

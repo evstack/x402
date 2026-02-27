@@ -20,8 +20,10 @@ services:
       - EVOLVE_NETWORK=evolve:1337
       - RP_ID=localhost
       - RP_ORIGIN=http://localhost:5173
-      - TREASURY_ADDRESS=0x0000000000000000000000000000000000000001
-      - FAUCET_PRIVATE_KEY=${FAUCET_PRIVATE_KEY:-}
+      # Faucet address as treasury — tokens recirculate instead of being burned
+      - TREASURY_ADDRESS=0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
+      # Hardhat #0 key — matches the genesis faucet account 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
+      - FAUCET_PRIVATE_KEY=${FAUCET_PRIVATE_KEY:-0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80}
     extra_hosts:
       - "host.docker.internal:host-gateway"
 

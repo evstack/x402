@@ -7,7 +7,7 @@ export interface AgentConfig {
   address: Address;
   requestsPerSecond: number;
   endpoints: WeightedEndpoint[];
-  tokenAccountId: bigint;
+  tokenAccountId: Uint8Array;
   chainId: number;
 }
 

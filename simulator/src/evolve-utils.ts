@@ -1,9 +1,6 @@
 import type { Hex } from "viem";
-import { bytesToHex, keccak256, toBytes } from "viem";
+import { bytesToHex, hexToBytes, keccak256, toBytes } from "viem";
 import { generatePrivateKey } from "viem/accounts";
-
-// Token account candidates (the token gets one of these IDs during genesis)
-export const TOKEN_ACCOUNT_CANDIDATES = [65535n, 65537n];
 
 // Hardhat accounts #3-#19 private keys (17 agent wallets)
 export const HARDHAT_AGENT_KEYS: Hex[] = [
@@ -34,6 +31,9 @@ export function getAgentPrivateKeys(agentCount: number): Hex[] {
   return keys.slice(0, agentCount);
 }
 
+/**
+ * Encode a u128 as 16-byte little-endian (Borsh encoding for u128).
+ */
 export function u128ToLeBytes(value: bigint): Uint8Array {
   const bytes = new Uint8Array(16);
   let v = value;
@@ -44,31 +44,59 @@ export function u128ToLeBytes(value: bigint): Uint8Array {
   return bytes;
 }
 
-export function accountIdToAddress(id: bigint): `0x${string}` {
-  const idBytes = new Uint8Array(16);
+/**
+ * Build a 32-byte AccountId from a simple integer (big-endian, zero-padded).
+ * Used for well-known genesis accounts like Token (id=65535).
+ */
+export function accountIdFromInt(id: bigint): Uint8Array {
+  const bytes = new Uint8Array(32);
   let v = id;
-  for (let i = 15; i >= 0; i -= 1) {
-    idBytes[i] = Number(v & 0xffn);
+  for (let i = 31; i >= 0; i -= 1) {
+    bytes[i] = Number(v & 0xffn);
     v >>= 8n;
   }
-  const addrBytes = new Uint8Array(20);
-  addrBytes.set(idBytes, 4);
-  return bytesToHex(addrBytes) as `0x${string}`;
+  return bytes;
 }
 
-export function buildTransferData(toAccountId: bigint, amount: bigint): `0x${string}` {
-  const selector = keccak256(toBytes("transfer")).slice(0, 10);
-  const args = new Uint8Array(32);
-  args.set(u128ToLeBytes(toAccountId), 0);
-  args.set(u128ToLeBytes(amount), 16);
-  const data = new Uint8Array(4 + args.length);
-  data.set(Buffer.from(selector.slice(2), "hex"), 0);
-  data.set(args, 4);
+/**
+ * derive_runtime_contract_address: AccountId → Ethereum address.
+ * keccak256("contract:addr:runtime:v1" + account_id_32_bytes)[12..32]
+ */
+export function accountIdToAddress(accountId: Uint8Array): `0x${string}` {
+  const prefix = toBytes("contract:addr:runtime:v1");
+  const preimage = new Uint8Array(prefix.length + 32);
+  preimage.set(prefix, 0);
+  preimage.set(accountId, prefix.length);
+  const hash = hexToBytes(keccak256(preimage));
+  return bytesToHex(hash.slice(12, 32)) as `0x${string}`;
+}
+
+/**
+ * derive_eth_eoa_account_id: Ethereum address → 32-byte AccountId.
+ * keccak256("eoa:eth:v1" + address_20_bytes) → [u8; 32]
+ */
+export function addressToAccountId(address: `0x${string}`): Uint8Array {
+  const prefix = toBytes("eoa:eth:v1");
+  const addrBytes = hexToBytes(address);
+  const preimage = new Uint8Array(prefix.length + 20);
+  preimage.set(prefix, 0);
+  preimage.set(addrBytes, prefix.length);
+  return hexToBytes(keccak256(preimage));
+}
+
+/**
+ * Build Token::transfer calldata.
+ * Selector: keccak256("transfer")[0..4]
+ * Args (Borsh): AccountId ([u8; 32]) + amount (u128 little-endian)
+ * Total: 4 + 32 + 16 = 52 bytes
+ */
+export function buildTransferData(toAccountId: Uint8Array, amount: bigint): `0x${string}` {
+  const selector = keccak256(toBytes("transfer")).slice(0, 10); // "0x" + 4 hex bytes
+  const selectorBytes = hexToBytes(selector as `0x${string}`);
+  const amountBytes = u128ToLeBytes(amount);
+  const data = new Uint8Array(4 + 32 + 16);
+  data.set(selectorBytes, 0);
+  data.set(toAccountId, 4);
+  data.set(amountBytes, 36);
   return bytesToHex(data) as `0x${string}`;
-}
-
-export function addressToAccountId(address: `0x${string}`): bigint {
-  const hex = address.slice(2);
-  const idHex = hex.slice(8);
-  return BigInt(`0x${idHex}`);
 }

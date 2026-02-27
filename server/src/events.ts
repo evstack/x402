@@ -29,6 +29,15 @@ class EventEmitter {
   private eventLog: PaymentEvent[] = [];
   private maxLogSize = 1000;
 
+  // Monotonic counters — never reset by log eviction
+  private counters = {
+    totalPayments: 0,
+    successfulPayments: 0,
+    failedPayments: 0,
+    totalRequests: 0,
+  };
+  private uniqueAgents: Set<string> = new Set();
+
   addConnection(ws: WebSocket): void {
     this.connections.add(ws);
 
@@ -44,7 +53,26 @@ class EventEmitter {
   }
 
   emit(event: PaymentEvent): void {
-    // Add to log
+    // Update monotonic counters
+    if (event.agentId) {
+      this.uniqueAgents.add(event.agentId);
+    }
+    switch (event.type) {
+      case "payment_submitted":
+        this.counters.totalPayments++;
+        break;
+      case "payment_confirmed":
+        this.counters.successfulPayments++;
+        break;
+      case "payment_failed":
+        this.counters.failedPayments++;
+        break;
+      case "request_served":
+        this.counters.totalRequests++;
+        break;
+    }
+
+    // Add to log (for WS history replay only)
     this.eventLog.push(event);
     if (this.eventLog.length > this.maxLogSize) {
       this.eventLog = this.eventLog.slice(-this.maxLogSize / 2);
@@ -70,7 +98,7 @@ class EventEmitter {
     return this.eventLog.slice(-count);
   }
 
-  // Aggregated metrics for dashboard
+  // Aggregated metrics for dashboard (reads monotonic counters)
   getMetrics(): {
     totalPayments: number;
     successfulPayments: number;
@@ -78,36 +106,10 @@ class EventEmitter {
     totalRequests: number;
     uniqueAgents: Set<string>;
   } {
-    const metrics = {
-      totalPayments: 0,
-      successfulPayments: 0,
-      failedPayments: 0,
-      totalRequests: 0,
-      uniqueAgents: new Set<string>(),
+    return {
+      ...this.counters,
+      uniqueAgents: this.uniqueAgents,
     };
-
-    for (const event of this.eventLog) {
-      if (event.agentId) {
-        metrics.uniqueAgents.add(event.agentId);
-      }
-
-      switch (event.type) {
-        case "payment_submitted":
-          metrics.totalPayments++;
-          break;
-        case "payment_confirmed":
-          metrics.successfulPayments++;
-          break;
-        case "payment_failed":
-          metrics.failedPayments++;
-          break;
-        case "request_served":
-          metrics.totalRequests++;
-          break;
-      }
-    }
-
-    return metrics;
   }
 }
 

@@ -2,14 +2,17 @@ import { createPublicClient, createWalletClient, defineChain, type Hash, http } 
 import { privateKeyToAccount } from "viem/accounts";
 import { Agent, createAgentConfig } from "./agent.js";
 import {
+  accountIdFromInt,
   accountIdToAddress,
   addressToAccountId,
   buildTransferData,
   getAgentPrivateKeys,
-  TOKEN_ACCOUNT_CANDIDATES,
 } from "./evolve-utils.js";
 import { MetricsCollector } from "./metrics.js";
 import type { PoolConfig, PoolMetrics, RequestResult } from "./types.js";
+
+// Genesis token account ID (last 2 bytes = 0xffff = 65535)
+const TOKEN_ACCOUNT_ID = accountIdFromInt(65535n);
 
 export class AgentPool {
   private config: PoolConfig;
@@ -63,74 +66,47 @@ export class AgentPool {
 
     console.log(`Faucet address: ${faucetAccount.address}`);
 
+    // Derive token contract Ethereum address from genesis AccountId
+    const tokenAddress = accountIdToAddress(TOKEN_ACCOUNT_ID);
+    console.log(`Token contract address: ${tokenAddress}`);
+
     // Calculate RPS per agent
     const rpsPerAgent = this.config.requestsPerSecond / agentCount;
 
-    // Discover token account ID by trial-funding the first agent.
-    // eth_getCode is not implemented, so we try each candidate with a real transfer.
-    let tokenAccountId: bigint | null = null;
+    // Fund first agent to verify token contract works
     const firstKey = agentKeys[0];
     const firstAgentConfig = createAgentConfig(
       `agent-000`,
       firstKey,
       rpsPerAgent,
       this.config.endpoints,
-      0n, // placeholder, will be set after discovery
+      TOKEN_ACCOUNT_ID,
       chainId,
     );
     const firstAgentAccountId = addressToAccountId(firstAgentConfig.address);
+    const firstFundData = buildTransferData(firstAgentAccountId, this.config.fundingAmount);
 
-    for (const candidate of TOKEN_ACCOUNT_CANDIDATES) {
-      const tokenAddress = accountIdToAddress(candidate);
-      const data = buildTransferData(firstAgentAccountId, this.config.fundingAmount);
-      console.log(`Trying token candidate ${candidate} (${tokenAddress})...`);
-      try {
-        const txHash = await faucetWallet.sendTransaction({
-          to: tokenAddress,
-          data,
-          value: 0n,
-          gas: 100_000n,
-        });
-        const receipt = await chainPublicClient.waitForTransactionReceipt({ hash: txHash });
-        if (receipt.status === "success") {
-          tokenAccountId = candidate;
-          console.log(`Found token at account ID ${candidate}`);
-          break;
-        }
-        console.warn(`Token candidate ${candidate} tx reverted`);
-      } catch (err) {
-        console.warn(`Token candidate ${candidate} failed:`, err);
-      }
+    console.log(`Funding agent ${firstAgentConfig.id} (${firstAgentConfig.address.slice(0, 10)}...)...`);
+    const firstTxHash = await faucetWallet.sendTransaction({
+      to: tokenAddress,
+      data: firstFundData,
+      value: 0n,
+      gas: 100_000n,
+    });
+    const firstReceipt = await chainPublicClient.waitForTransactionReceipt({ hash: firstTxHash });
+    if (firstReceipt.status !== "success") {
+      throw new Error(`Token transfer to first agent reverted (tx: ${firstTxHash})`);
     }
-    if (tokenAccountId === null) {
-      throw new Error("Could not find token account. Tried all candidates.");
-    }
+    console.log(`Funded agent ${firstAgentConfig.id} with ${this.config.fundingAmount} tokens`);
 
-    // First agent already funded during discovery - create it
-    const fundedFirstConfig = createAgentConfig(
-      `agent-000`,
-      firstKey,
-      rpsPerAgent,
-      this.config.endpoints,
-      tokenAccountId,
-      chainId,
-    );
-    const firstAgent = new Agent(
-      fundedFirstConfig,
-      this.config.serverUrl,
-      this.config.evolveRpcUrl,
-    );
+    const firstAgent = new Agent(firstAgentConfig, this.config.serverUrl, this.config.evolveRpcUrl);
     firstAgent.setResultHandler((result) => this.handleAgentResult(result));
     this.agents.push(firstAgent);
-    this.metrics.registerAgent(fundedFirstConfig.id, fundedFirstConfig.address);
-    console.log(
-      `Funded agent ${fundedFirstConfig.id} (${fundedFirstConfig.address.slice(0, 10)}...) with ${this.config.fundingAmount} tokens`,
-    );
+    this.metrics.registerAgent(firstAgentConfig.id, firstAgentConfig.address);
 
     // Fund remaining agents in parallel: batch-send all txs, then wait for the last receipt
     const fundingTxHashes: Hash[] = [];
     const pendingAgents: { config: ReturnType<typeof createAgentConfig> }[] = [];
-    const tokenAddress = accountIdToAddress(tokenAccountId);
 
     for (let i = 1; i < agentCount; i++) {
       const privateKey = agentKeys[i];
@@ -139,7 +115,7 @@ export class AgentPool {
         privateKey,
         rpsPerAgent,
         this.config.endpoints,
-        tokenAccountId,
+        TOKEN_ACCOUNT_ID,
         chainId,
       );
 

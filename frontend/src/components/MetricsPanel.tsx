@@ -2,6 +2,7 @@ import type { Metrics } from "../hooks/useMetrics";
 
 interface MetricsPanelProps {
   metrics: Metrics;
+  totalRequests?: number;
 }
 
 const styles = {
@@ -80,14 +81,16 @@ const styles = {
 
 const BUCKET_LABELS = ["<50ms", "50-100", "100-200", "200-500", "500+"];
 
-export function MetricsPanel({ metrics }: MetricsPanelProps) {
+export function MetricsPanel({ metrics, totalRequests }: MetricsPanelProps) {
   const maxBucket = Math.max(...metrics.latencyHistogram, 1);
 
   return (
     <div style={styles.container}>
       <div style={styles.metric}>
         <div style={styles.label}>Total Requests</div>
-        <div style={styles.value}>{metrics.totalRequests.toLocaleString()}</div>
+        <div style={styles.value}>
+          {totalRequests !== undefined ? totalRequests.toLocaleString() : "..."}
+        </div>
       </div>
 
       <div style={styles.metric}>
