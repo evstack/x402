@@ -107,10 +107,17 @@ export async function getNonce(client: EvolveClient, address: Address): Promise<
 /**
  * Get transaction receipt by hash
  */
+export interface TransactionReceipt {
+  status: "success" | "reverted";
+  blockNumber: bigint;
+  gasUsed: bigint;
+  from: Address;
+}
+
 export async function getTransactionReceipt(
   client: EvolveClient,
   hash: Hash,
-): Promise<{ status: "success" | "reverted"; blockNumber: bigint; gasUsed: bigint } | null> {
+): Promise<TransactionReceipt | null> {
   if (client.mode === "grpc" && client.grpc) {
     const receipt = await client.grpc.getTransactionReceipt(hash);
     if (!receipt) return null;
@@ -118,6 +125,7 @@ export async function getTransactionReceipt(
       status: receipt.success ? "success" : "reverted",
       blockNumber: BigInt(receipt.blockNumber),
       gasUsed: BigInt(receipt.gasUsed),
+      from: receipt.from,
     };
   }
 
@@ -127,6 +135,24 @@ export async function getTransactionReceipt(
     status: receipt.status,
     blockNumber: receipt.blockNumber,
     gasUsed: receipt.gasUsed,
+    from: receipt.from,
+  };
+}
+
+/**
+ * Get transaction by hash (for calldata inspection).
+ */
+export async function getTransaction(
+  client: EvolveClient,
+  hash: Hash,
+): Promise<{ from: Address; to: Address | null; input: `0x${string}`; value: bigint } | null> {
+  const tx = await client.public.getTransaction({ hash });
+  if (!tx) return null;
+  return {
+    from: tx.from,
+    to: tx.to ?? null,
+    input: tx.input,
+    value: tx.value,
   };
 }
 
