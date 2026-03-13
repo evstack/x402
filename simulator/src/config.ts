@@ -37,6 +37,7 @@ export interface CLIOptions {
   funding: string;
   faucetKey?: string;
   duration?: number;
+  topUpInterval?: number;
 }
 
 export function createPoolConfig(options: CLIOptions): PoolConfig {
@@ -55,6 +56,7 @@ export function createPoolConfig(options: CLIOptions): PoolConfig {
     requestsPerSecond: options.rps,
     faucetPrivateKey: faucetKey as Hex,
     endpoints: DEFAULT_ENDPOINTS,
+    topUpInterval: options.topUpInterval ?? 1800,
   };
 }
 

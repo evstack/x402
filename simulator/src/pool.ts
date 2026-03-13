@@ -1,5 +1,16 @@
-import { createPublicClient, createWalletClient, defineChain, type Hash, http } from "viem";
-import { privateKeyToAccount } from "viem/accounts";
+import {
+  type Address,
+  type Chain,
+  createPublicClient,
+  createWalletClient,
+  defineChain,
+  type Hash,
+  type HttpTransport,
+  http,
+  type PublicClient,
+  type WalletClient,
+} from "viem";
+import { type PrivateKeyAccount, privateKeyToAccount } from "viem/accounts";
 import { Agent, createAgentConfig } from "./agent.js";
 import {
   accountIdFromInt,
@@ -20,7 +31,13 @@ export class AgentPool {
   private metrics: MetricsCollector;
   private running: boolean = false;
   private metricsInterval: ReturnType<typeof setInterval> | null = null;
+  private topUpInterval: ReturnType<typeof setInterval> | null = null;
   private onMetricsUpdate: ((metrics: PoolMetrics) => void) | null = null;
+
+  // Stored after initialize() for top-ups
+  private faucetWallet: WalletClient<HttpTransport, Chain, PrivateKeyAccount> | null = null;
+  private chainPublicClient: PublicClient<HttpTransport, Chain> | null = null;
+  private tokenAddress: Address | null = null;
 
   constructor(config: PoolConfig) {
     this.config = config;
@@ -86,7 +103,9 @@ export class AgentPool {
     const firstAgentAccountId = addressToAccountId(firstAgentConfig.address);
     const firstFundData = buildTransferData(firstAgentAccountId, this.config.fundingAmount);
 
-    console.log(`Funding agent ${firstAgentConfig.id} (${firstAgentConfig.address.slice(0, 10)}...)...`);
+    console.log(
+      `Funding agent ${firstAgentConfig.id} (${firstAgentConfig.address.slice(0, 10)}...)...`,
+    );
     const firstTxHash = await faucetWallet.sendTransaction({
       to: tokenAddress,
       data: firstFundData,
@@ -104,7 +123,13 @@ export class AgentPool {
     this.agents.push(firstAgent);
     this.metrics.registerAgent(firstAgentConfig.id, firstAgentConfig.address);
 
-    // Fund remaining agents in parallel: batch-send all txs, then wait for the last receipt
+    // Fund remaining agents with explicit nonce management.
+    // Evolve's pending nonce may not reflect unconfirmed txs, so we track it locally.
+    let faucetNonce = await chainPublicClient.getTransactionCount({
+      address: faucetAccount.address,
+      blockTag: "pending",
+    });
+
     const fundingTxHashes: Hash[] = [];
     const pendingAgents: { config: ReturnType<typeof createAgentConfig> }[] = [];
 
@@ -127,11 +152,13 @@ export class AgentPool {
       );
 
       const txHash = await faucetWallet.sendTransaction({
+        nonce: faucetNonce,
         to: tokenAddress,
         data,
         value: 0n,
         gas: 100_000n,
       });
+      faucetNonce++;
 
       fundingTxHashes.push(txHash);
       pendingAgents.push({ config: agentConfig });
@@ -152,6 +179,11 @@ export class AgentPool {
       this.agents.push(agent);
       this.metrics.registerAgent(agentConfig.id, agentConfig.address);
     }
+
+    // Store for top-ups
+    this.faucetWallet = faucetWallet;
+    this.chainPublicClient = chainPublicClient;
+    this.tokenAddress = tokenAddress;
 
     console.log(`Pool initialized with ${this.agents.length} agents`);
   }
@@ -194,6 +226,17 @@ export class AgentPool {
       console.log(this.metrics.formatSummary());
     }, 5000);
 
+    // Start auto top-up loop if configured
+    if (this.config.topUpInterval > 0) {
+      const intervalMs = this.config.topUpInterval * 1000;
+      console.log(`Auto top-up enabled: every ${this.config.topUpInterval}s`);
+      this.topUpInterval = setInterval(() => {
+        this.fundAgents().catch((err) => {
+          console.error("Top-up cycle failed:", err);
+        });
+      }, intervalMs);
+    }
+
     console.log(`All ${this.agents.length} agents started`);
     console.log(`Target TPS: ${this.config.requestsPerSecond}`);
     console.log(`Server: ${this.config.serverUrl}`);
@@ -210,11 +253,72 @@ export class AgentPool {
       clearInterval(this.metricsInterval);
       this.metricsInterval = null;
     }
+    if (this.topUpInterval) {
+      clearInterval(this.topUpInterval);
+      this.topUpInterval = null;
+    }
 
     await Promise.all(this.agents.map((agent) => agent.stop()));
 
     console.log("All agents stopped");
     console.log(this.metrics.formatSummary());
+  }
+
+  /**
+   * Fund all agents with fundingAmount tokens from the faucet.
+   * Sends transfers in sequence (faucet nonce management) and waits for the
+   * last receipt to confirm the batch. Skips agents whose tx fails and aborts
+   * the batch on the first send error to avoid nonce desync.
+   */
+  private async fundAgents(): Promise<void> {
+    if (!this.faucetWallet || !this.chainPublicClient || !this.tokenAddress) return;
+    if (this.agents.length === 0) return;
+
+    const start = Date.now();
+    console.log(`[top-up] Funding ${this.agents.length} agents...`);
+
+    // Fetch current nonce once — Evolve's pending count doesn't reflect
+    // unconfirmed txs, so we must track it locally within the batch.
+    let nonce = await this.chainPublicClient.getTransactionCount({
+      address: this.faucetWallet.account.address,
+      blockTag: "pending",
+    });
+
+    const txHashes: Hash[] = [];
+    let failed = 0;
+    for (const agent of this.agents) {
+      try {
+        const agentAccountId = addressToAccountId(agent.address);
+        const data = buildTransferData(agentAccountId, this.config.fundingAmount);
+        const txHash = await this.faucetWallet.sendTransaction({
+          nonce,
+          to: this.tokenAddress,
+          data,
+          value: 0n,
+          gas: 100_000n,
+        });
+        nonce++;
+        txHashes.push(txHash);
+      } catch (err) {
+        failed++;
+        console.error(`[top-up] Failed to send tx for ${agent.id}:`, err);
+        // A send error likely means a nonce desync; stop the batch so the
+        // next cycle starts with a fresh nonce from the wallet client.
+        break;
+      }
+    }
+
+    // Wait for the last tx to confirm (all prior ones are confirmed by then)
+    if (txHashes.length > 0) {
+      const lastTxHash = txHashes[txHashes.length - 1];
+      await this.chainPublicClient.waitForTransactionReceipt({ hash: lastTxHash });
+    }
+
+    const elapsed = ((Date.now() - start) / 1000).toFixed(1);
+    const status = failed > 0 ? ` (aborted after ${failed} failure)` : "";
+    console.log(
+      `[top-up] Funded ${txHashes.length}/${this.agents.length} agents with ${this.config.fundingAmount} tokens each (${elapsed}s)${status}`,
+    );
   }
 
   getMetrics(): PoolMetrics {

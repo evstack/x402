@@ -14,6 +14,7 @@ program
   .option("-f, --funding <amount>", "Funding amount per agent (token units, 6 decimals)", "1000000")
   .option("-k, --faucet-key <key>", "Faucet private key (or set FAUCET_PRIVATE_KEY)")
   .option("-d, --duration <seconds>", "Run duration in seconds (0 = infinite)", "0")
+  .option("--top-up-interval <seconds>", "Fund agents every N seconds (0 = disabled)", "1800")
   .parse();
 
 const opts = program.opts();
@@ -30,6 +31,7 @@ async function main() {
     funding: opts.funding,
     faucetKey: opts.faucetKey,
     duration: opts.duration ? parseInt(opts.duration, 10) : undefined,
+    topUpInterval: opts.topUpInterval ? parseInt(opts.topUpInterval, 10) : undefined,
   });
 
   // Validate
@@ -48,6 +50,9 @@ async function main() {
   console.log(`  Server: ${config.serverUrl}`);
   console.log(`  Evolve RPC: ${config.evolveRpcUrl}`);
   console.log(`  Funding per agent: ${config.fundingAmount} tokens (6 decimals)`);
+  console.log(
+    `  Auto top-up: ${config.topUpInterval > 0 ? `every ${config.topUpInterval}s` : "disabled"}`,
+  );
   console.log("");
 
   // Create and initialize pool

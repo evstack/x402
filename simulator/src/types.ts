@@ -28,6 +28,8 @@ export interface PoolConfig {
   requestsPerSecond: number;
   faucetPrivateKey: Hex;
   endpoints: WeightedEndpoint[];
+  /** Seconds between automatic agent top-ups. 0 = disabled. */
+  topUpInterval: number;
 }
 
 // Result of a single request
